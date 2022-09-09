@@ -2,10 +2,23 @@
 #include <string>
 #include <chrono>
 #include "ThreadPool.hpp"
+#include "LFUCache.hpp"
 
 using namespace std;
+using namespace std::chrono;
 
 #define sleep(sec) this_thread::sleep_for(chrono::seconds(sec));
+
+template<typename Func, typename... Args>
+void RunWithTimeCost(Func&& func, Args&&... args)
+{
+    auto start_tp = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    cout << "[begin at(ms)]: " << start_tp << endl;
+    func(std::forward<Args&&>(args)...);
+    auto end_tp = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    cout << "[end at(ms)]: " << end_tp << endl;
+    cout << "[used total(ms)]: " << end_tp - start_tp << endl << endl;
+}
 
 void demo_ThreadPool()
 {
@@ -23,8 +36,29 @@ void demo_ThreadPool()
     fprintf(stdout, "func [%s] is abort to return\n", __func__);
 }
 
+void demo_LFUCache()
+{
+    static const int MAX = 100000;
+    LFUCache<int, int> lfu(MAX / 10);
+    cout << "put" << endl;
+    RunWithTimeCost([&lfu] {
+        for (int i = 1; i <= MAX; ++i) {
+            lfu.put(i, i * 5);
+        }
+        });
+    
+    cout << "get" << endl;
+    RunWithTimeCost([&lfu] {
+        for (int i = 1; i <= MAX; ++i) {
+            // cout << "key=" << i << ", value=" << lfu.get(i) << endl;
+            lfu.get(i);
+        }
+        });
+}
+
 int main(int argc, char** argv)
 {
     demo_ThreadPool();
+    demo_LFUCache();
     return 0;
 }
