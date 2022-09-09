@@ -3,6 +3,7 @@
 #include <chrono>
 #include "ThreadPool.hpp"
 #include "LFUCache.hpp"
+#include "LRUCache.hpp"
 
 using namespace std;
 using namespace std::chrono;
@@ -56,9 +57,30 @@ void demo_LFUCache()
         });
 }
 
+void demo_LRUCache()
+{
+    static const int MAX = 1000;
+    LRUCache<int, int> lru(MAX / 10);
+    cout << "put" << endl;
+    RunWithTimeCost([&lru] {
+        for (int i = 1; i <= MAX; ++i) {
+            lru.put(i, i * 5);
+        }
+        });
+    
+    cout << "get" << endl;
+    RunWithTimeCost([&lru] {
+        for (int i = 1; i <= MAX; ++i) {
+            // cout << "key=" << i << ", value=" << lru.get(i) << endl;
+            lru.get(i);
+        }
+        });
+}
+
 int main(int argc, char** argv)
 {
     demo_ThreadPool();
     demo_LFUCache();
+    demo_LRUCache();
     return 0;
 }
