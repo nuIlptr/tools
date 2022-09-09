@@ -10,15 +10,13 @@ public:
 
     LFUCache(size_t cap)
         : capacity_(cap)
-        , head_(nullptr)
-        , tail_(nullptr)
-        , countHead_(nullptr)
-        , countTail_(nullptr)
+        , head_(new LFUCacheNode)
+        , tail_(new LFUCacheNode)
+        , countHead_(new CountListNode)
+        , countTail_(new CountListNode)
     {
-        head_ = new LFUCacheNode, tail_ = new LFUCacheNode;
         head_->next = tail_;
         tail_->prev = head_;
-        countHead_ = new CountListNode, countTail_ = new CountListNode;
         countHead_->next = countTail_;
         countTail_->prev = countHead_;
     }
@@ -37,24 +35,41 @@ public:
 
     LFUCache(LFUCache<KeyType, ValueType>&& lhs)
     {
-        using std::swap;
-        decltype(*this) tmp(0);
-        swap(tmp.capacity_, lhs.capacity_);
-        swap(tmp.head_, lhs.head_);
-        swap(tmp.tail_, lhs.tail_);
-        swap(tmp.countHashTbl_, lhs.countHashTbl_);
-        swap(tmp.keyHashTbl_, lhs.keyHashTbl_);
+        capacity_ = lhs.capacity_;
+        head_ = lhs.head_;
+        tail_ = lhs.tail_;
+        countHead_ = lhs.countHead_;
+        countTail_ = lhs.countTail_;
+        countHashTbl_ = std::move(lhs.countHashTbl_);
+        keyHashTbl_ = std::move(lhs.keyHashTbl_);
+
+        // destructable
+        lhs.capacity_ = 0;
+        lhs.head_ = new LFUCacheNode;
+        lhs.tail_ = new LFUCacheNode;
+        lhs.head_->next = lhs.tail_;
+        lhs.tail_->prev = lhs.head_;
+
+        lhs.countHead_ = new CountListNode;
+        lhs.countTail_ = new CountListNode;
+        lhs.countHead_->next = lhs.countTail_;
+        lhs.countTail_->prev = lhs.countHead_;
     }
 
     LFUCache<KeyType, ValueType>& operator=(LFUCache<KeyType, ValueType>&& lhs)
     {
-        if (this == &lhs) return *this;
-        swap(capacity_, lhs.capacity_);
-        swap(head_, lhs.head_);
-        swap(tail_, lhs.tail_);
-        swap(countHashTbl_, lhs.countHashTbl_);
-        swap(keyHashTbl_, lhs.keyHashTbl_);
-        lhs.release();
+        if (this != &lhs) {
+            using std::swap;
+            swap(capacity_, lhs.capacity_);
+            swap(head_, lhs.head_);
+            swap(tail_, lhs.tail_);
+            swap(countHead_, lhs.countHead_);
+            swap(countTail_, lhs.countTail_);
+            swap(countHashTbl_, lhs.countHashTbl_);
+            swap(keyHashTbl_, lhs.keyHashTbl_);
+            lhs.release();
+        }
+        return *this;
     }
 
     ValueType get(KeyType key)

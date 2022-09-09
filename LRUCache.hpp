@@ -15,6 +15,46 @@ public:
         tail_->prev = head_;
     }
 
+    ~LRUCache()
+    {
+        release();
+        delete head_;
+        delete tail_;
+    }
+
+    LRUCache(const LRUCache<KeyType, ValueType>& lhs) = delete;
+    void operator=(const LRUCache<KeyType, ValueType>& lhs) = delete;
+
+    LRUCache(LRUCache<KeyType, ValueType>&& lhs)
+    {
+        capacity_ = lhs.capacity_;
+        head_ = lhs.head_;
+        tail_ = lhs.tail_;
+        hash_ = std::move(lhs.hash_);
+
+        // destructable
+        lhs.capacity_ = 0;
+        lhs.head_ = new LRUCacheNode;
+        lhs.tail_ = new LRUCacheNode;
+        lhs.head_->next = lhs.tail_;
+        lhs.tail_->prev = lhs.head_;
+    }
+
+    LRUCache<KeyType, ValueType>& operator=(LRUCache<KeyType, ValueType>&& lhs)
+    {
+        if (&lhs != this) {
+            using std::swap;
+            swap(capacity_, lhs.capacity_);
+            swap(head_, lhs.head_);
+            swap(tail_, lhs.tail_);
+            swap(hash_, lhs.hash_);
+
+            // release
+            lhs.release();
+        }
+        return *this;
+    }
+
     ValueType get(KeyType key)
     {
         auto node = find(key);
@@ -89,6 +129,21 @@ private:
         node->next = head_->next;
         node->prev->next = node;
         node->next->prev = node;
+    }
+
+    void release()
+    {
+        auto node = head_->next;
+        while (node != tail_) {
+            auto tmp = node->next;
+            delete node;
+            node = tmp;
+        }
+
+        head_->next = tail_;
+        tail_->prev = head_;
+        decltype(hash_)().swap(hash_);
+        capacity_ = 0;
     }
 
 private:
